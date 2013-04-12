@@ -10,7 +10,12 @@ module RubyGpg
 
   def gpg_command
     "#{config.executable} --homedir #{config.homedir} --quiet" +
-    " --no-secmem-warning --no-permission-warning --no-tty --yes"
+    " --no-secmem-warning --no-permission-warning --yes"
+  end
+
+  def gpg_decrypt_command
+    "#{config.executable} --homedir #{config.homedir} --quiet" +
+    " --skip-verify --no-secmem-warning --no-permission-warning --no-tty --yes"
   end
   
   def encrypt(file, recipient, opts = {})
@@ -22,7 +27,7 @@ module RubyGpg
     
     ascii = options[:armor] == true ? "-a " : ""
     
-    command = "#{gpg_command} #{ascii}--output #{output}" +
+    command = "#{gpg_command} --trust-model always #{ascii}--output #{output}" +
               " --recipient \"#{recipient}\" --encrypt #{file}"
     
     run_command(command)
@@ -39,14 +44,14 @@ module RubyGpg
   
   def decrypt(file, passphrase = nil, opts = {})
     outfile = opts[:output].nil? ? file.gsub(/\.gpg$|\.asc$/, '') : opts[:output]
-    command = "#{gpg_command} --output #{outfile}"
+    command = "#{gpg_decrypt_command} --output #{outfile}"
     command << " --passphrase #{passphrase}" if passphrase
     command << " --decrypt #{file}"
     run_command(command)
   end
   
   def decrypt_string(string, passphrase = nil)
-    command = gpg_command.dup
+    command = gpg_decrypt_command.dup
     command << " --passphrase #{passphrase}" if passphrase
     command << " --decrypt"
     run_command(command, string)
